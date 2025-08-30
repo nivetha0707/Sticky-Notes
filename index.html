@@ -1,0 +1,161 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticky Notes App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background: #ffca28;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    #controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { opacity: 0.9; }
+    .add-btn { background: #42a5f5; color: #fff; }
+    .clear-btn { background: #ef5350; color: #fff; }#board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 20px;
+}
+.note {
+  width: 200px;
+  min-height: 150px;
+  padding: 10px;
+  background: #fff59d;
+  border-radius: 10px;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+  position: relative;
+  cursor: grab;
+}
+.note textarea {
+  width: 100%;
+  height: 100px;
+  border: none;
+  resize: none;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+}
+.note .tools {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  left: 5px;
+}
+.note .tools button {
+  background: rgba(255,255,255,0.7);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+  </style>
+</head>
+<body>
+  <header>Sticky Notes Board</header>
+  <div id="controls">
+    <button class="add-btn" onclick="addNote()">➕ Add Note</button>
+    <button class="clear-btn" onclick="clearNotes()">🗑 Clear All</button>
+  </div>  <div id="board"></div>  <script>
+    const board = document.getElementById('board');
+
+    // Load saved notes
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem('notes') || '[]');
+      saved.forEach(data => addNote(data.text, data.color, false));
+    }
+
+    function addNote(text = '', color = '#fff59d', save = true) {
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.style.background = color;
+
+      note.innerHTML = `
+        <div class="tools">
+          <button onclick="changeColor(this)">🎨</button>
+          <button onclick="deleteNote(this)">❌</button>
+        </div>
+        <textarea oninput="saveNotes()">${text}</textarea>`;
+
+  note.setAttribute('draggable', 'true');
+  note.addEventListener('dragstart', dragStart);
+  note.addEventListener('dragover', dragOver);
+  note.addEventListener('drop', drop);
+
+  board.appendChild(note);
+  if (save) saveNotes();
+}
+
+function deleteNote(btn) {
+  btn.parentElement.parentElement.remove();
+  saveNotes();
+}
+
+function clearNotes() {
+  if (confirm('Delete all notes?')) {
+    board.innerHTML = '';
+    localStorage.removeItem('notes');
+  }
+}
+
+function changeColor(btn) {
+  const colors = ['#fff59d', '#aed581', '#90caf9', '#f48fb1', '#ffe082'];
+  const note = btn.parentElement.parentElement;
+  let current = colors.indexOf(note.style.background);
+  note.style.background = colors[(current + 1) % colors.length];
+  saveNotes();
+}
+
+function saveNotes() {
+  const notes = [];
+  document.querySelectorAll('.note').forEach(note => {
+    notes.push({
+      text: note.querySelector('textarea').value,
+      color: note.style.background
+    });
+  });
+  localStorage.setItem('notes', JSON.stringify(notes));
+}
+
+// Drag and drop
+let dragged;
+function dragStart(e) { dragged = this; }
+function dragOver(e) { e.preventDefault(); }
+function drop(e) {
+  e.preventDefault();
+  if (dragged !== this) {
+    let draggedHTML = dragged.outerHTML;
+    dragged.outerHTML = this.outerHTML;
+    this.outerHTML = draggedHTML;
+    saveNotes();
+    location.reload(); // reload to reapply events
+  }
+}
+
+  </script>
+</body>
+</html>
